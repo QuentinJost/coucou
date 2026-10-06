@@ -69,7 +69,7 @@ Send newline-terminated JSON to the socket:
 - **macOS (GitHub build):** `~/Library/Application Support/NotchBuddy/nb.sock`
 - **macOS (App Store build):** `~/Library/Containers/fr.louisraille.Coucou/Data/nb.sock`
 - **Windows:** `\\.\pipe\coucou-<user-SID>`
-- **Linux:** `$XDG_RUNTIME_DIR/coucou.sock` (usually `/run/user/<uid>/coucou.sock`). Only your own user account can connect.
+- **Linux:** `$XDG_RUNTIME_DIR/coucou.sock` (usually `/run/user/<uid>/coucou.sock`). Only your own user account can connect. An agent in a container can use a directory listed in `COUCOU_EXTRA_SOCKET_DIRS` instead (see [`windows/README.md`](../windows/README.md#linux)).
 
 ## Supported events
 

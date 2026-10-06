@@ -563,6 +563,14 @@ What changes on Linux:
   Coucou that is already open. The ids are `toggleIsland`, `openChat`,
   `goToAlert`, `jumpToTerminal`, `nextPill`, `prevPill`, `muteToggle`,
   `desktopToggle` and `wardrobeToggle`.
+- **Hooks in a container** (Claude Code running in Docker, say) cannot reach
+  `$XDG_RUNTIME_DIR`. List one or more private directories (yours, mode 0700) in
+  `COUCOU_EXTRA_SOCKET_DIRS`, colon-separated, in the environment Coucou starts
+  with (e.g. `~/.config/environment.d/coucou.conf`): Coucou also serves
+  `coucou.sock` in each of them. Bind-mount the directory into the container and
+  run the hooks there with `XDG_RUNTIME_DIR` set to the mount point. The same
+  user check applies, so the container must run as your uid. Directories that
+  are not private are skipped and named in the log.
 - **Keys** live in the Secret Service (GNOME Keyring, KWallet).
 - **Spotify** (Settings → Integrations) is read over MPRIS, Spotify's D-Bus
   interface on the session bus: the pill shows the track and plays, pauses

@@ -1,7 +1,8 @@
 // Relay server for coucou-hook.
 //
 // Windows: the named pipe `\\.\pipe\coucou-<sid>`, one instance per connection.
-// Linux: the Unix socket `$XDG_RUNTIME_DIR/coucou.sock`. Every hook event is
+// Linux: the Unix socket `$XDG_RUNTIME_DIR/coucou.sock`, and one in each directory
+// of `COUCOU_EXTRA_SOCKET_DIRS` (for hooks in a container). Every hook event is
 // forwarded to the island as a `hook` event. `PermissionRequest` is the only one
 // that keeps its connection open: it waits for the island's decision and writes
 // it back on the same connection, which is how approving from the island works.
@@ -104,20 +105,35 @@ pub fn start(app: AppHandle) {
 
 #[cfg(target_os = "linux")]
 pub fn start(app: AppHandle) {
+    let main = crate::platform::relay_socket_path();
+    match &main {
+        Some(path) => serve(app.clone(), path.clone()),
+        None => log::line("no private runtime directory ($XDG_RUNTIME_DIR) — Claude Code hooks are inactive"),
+    }
+    // The sockets of COUCOU_EXTRA_SOCKET_DIRS, for hooks that cannot reach the
+    // runtime directory (an agent in a container): the same checks, the same island.
+    let (extra, skipped) = crate::platform::extra_relay_socket_paths();
+    for dir in skipped {
+        log::line(format!("COUCOU_EXTRA_SOCKET_DIRS: {dir} is not an absolute, private (0700) directory of ours — skipped"));
+    }
+    for path in extra.into_iter().filter(|p| Some(p) != main.as_ref()) {
+        log::line(format!("also serving the relay socket {}", path.display()));
+        serve(app.clone(), path);
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn serve(app: AppHandle, path: std::path::PathBuf) {
     use std::os::unix::fs::PermissionsExt;
     use tokio::net::UnixListener;
 
     tauri::async_runtime::spawn(async move {
-        let Some(path) = crate::platform::relay_socket_path() else {
-            log::line("no private runtime directory ($XDG_RUNTIME_DIR) — Claude Code hooks are inactive");
-            return;
-        };
         // A socket file left behind by a crash answers nothing and can go. One
         // that answers belongs to a Coucou that is still running: like
         // first_pipe_instance on Windows, we refuse to serve on top of it.
         if path.exists() {
             if std::os::unix::net::UnixStream::connect(&path).is_ok() {
-                log::line("another Coucou already serves the relay socket");
+                log::line(format!("another Coucou already serves {}", path.display()));
                 return;
             }
             let _ = std::fs::remove_file(&path);
@@ -125,11 +141,11 @@ pub fn start(app: AppHandle) {
         let listener = match UnixListener::bind(&path) {
             Ok(l) => l,
             Err(err) => {
-                log::line(format!("cannot open the relay socket: {err}"));
+                log::line(format!("cannot open the relay socket {}: {err}", path.display()));
                 return;
             }
         };
-        // The runtime directory is already 0700; this is belt and braces.
+        // The directory is already 0700; this is belt and braces.
         let _ = std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600));
         let uid = unsafe { libc::getuid() };
         loop {

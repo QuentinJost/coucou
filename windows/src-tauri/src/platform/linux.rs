@@ -232,6 +232,32 @@ pub fn user_full_name() -> Option<String> {
     }
 }
 
+/// More relay sockets, for hooks that cannot reach `$XDG_RUNTIME_DIR`: Claude
+/// Code running in a container, say, given one of these directories as a bind
+/// mount (its hooks then run coucou-hook with `XDG_RUNTIME_DIR` set to the
+/// mount point). `COUCOU_EXTRA_SOCKET_DIRS` lists them, colon-separated. Each
+/// must be absolute and private like the runtime directory; any other is left
+/// out, and returned in the second list for the log.
+pub fn extra_relay_socket_paths() -> (Vec<PathBuf>, Vec<String>) {
+    extra_socket_paths(&std::env::var_os("COUCOU_EXTRA_SOCKET_DIRS").unwrap_or_default())
+}
+
+fn extra_socket_paths(value: &std::ffi::OsStr) -> (Vec<PathBuf>, Vec<String>) {
+    let mut paths: Vec<PathBuf> = Vec::new();
+    let mut skipped = Vec::new();
+    for dir in std::env::split_paths(value).filter(|d| !d.as_os_str().is_empty()) {
+        if dir.is_absolute() && is_private_dir(&dir) {
+            let path = dir.join("coucou.sock");
+            if !paths.contains(&path) {
+                paths.push(path);
+            }
+        } else {
+            skipped.push(dir.display().to_string());
+        }
+    }
+    (paths, skipped)
+}
+
 // ── Processes ─────────────────────────────────────────────────────────────────
 
 /// Nothing to hide: a spawned process only gets a terminal if it asks for one.
@@ -768,6 +794,25 @@ pub fn layer_display(island: &WebviewWindow, mochi: &WebviewWindow) -> Option<(f
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn extra_relay_sockets_go_only_in_private_absolute_directories_of_ours() {
+        let base = std::env::temp_dir().join(format!("coucou-extra-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        let private = base.join("private");
+        let open = base.join("open");
+        for (dir, mode) in [(&private, 0o700), (&open, 0o755)] {
+            std::fs::create_dir_all(dir).unwrap();
+            std::fs::set_permissions(dir, std::fs::Permissions::from_mode(mode)).unwrap();
+        }
+        let value = format!("{}::relative:{}:{}:{}", private.display(), open.display(), base.join("missing").display(), private.display());
+        let (paths, skipped) = extra_socket_paths(std::ffi::OsStr::new(&value));
+        // The private one once, though listed twice; every other one named, none of them served.
+        assert_eq!(paths, vec![private.join("coucou.sock")]);
+        assert_eq!(skipped, vec!["relative".to_string(), open.display().to_string(), base.join("missing").display().to_string()]);
+        assert_eq!(extra_socket_paths(std::ffi::OsStr::new("")), (vec![], vec![]));
+        let _ = std::fs::remove_dir_all(&base);
+    }
 
     #[test]
     fn only_a_private_directory_of_ours_can_hold_the_relay_socket() {
