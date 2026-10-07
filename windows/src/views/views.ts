@@ -118,6 +118,12 @@ export function buildHeader(actions: ViewActions): ViewHost {
   const codexPill = buildPlanPill(true);
   const planPills = h("div", { class: "plan-pills" }, claudePill.el, codexPill.el);
   let codexShown = false;
+  // Folds the island back to its compact bar, as Escape does.
+  const collapseBtn = h(
+    "button",
+    { title: tl("Collapse"), onclick: () => { actions.blip(); actions.collapse(); } },
+    svg(ICONS.chevronUp, 14, { stroke: 2.2 }),
+  );
 
   function go(v: IslandViewName) {
     actions.blip();
@@ -128,7 +134,7 @@ export function buildHeader(actions: ViewActions): ViewHost {
     "div",
     { id: "header" },
     h("div", { class: "tabs" }, tabHome, tabChat, tabDrop),
-    h("div", { class: "header-actions" }, planPills, gearBtn, soundBtn),
+    h("div", { class: "header-actions" }, planPills, gearBtn, soundBtn, collapseBtn),
   );
   const headerActions = el.lastElementChild as HTMLElement;
 
@@ -146,6 +152,8 @@ export function buildHeader(actions: ViewActions): ViewHost {
       soundBtn.append(svg(State.settings.soundEnabled ? ICONS.speakerOn : ICONS.speakerOff, 14));
       syncPlanPills();
       el.style.opacity = v === "confused" ? "0" : "1";
+      // Not while an approval is up: like Escape, it must be answered first.
+      collapseBtn.style.display = State.isPinned ? "none" : "";
     },
   };
 
