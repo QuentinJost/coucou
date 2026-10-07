@@ -199,10 +199,11 @@ function buildOverview(actions: ViewActions): ViewHost {
   // runs on, and a slider being dragged must not be rebuilt under the pointer.
   const spotifyCard = buildSpotifyCard();
   let spotifyPill: SpotifyPillHost | null = null;
+  const rightCol = h("div", { class: "right" }, right);
 
   const el = h("div", { class: "view overview" },
     h("div", { class: "left" }, left),
-    h("div", { class: "right" }, right),
+    rightCol,
   );
 
   let pillIds = "";
@@ -391,6 +392,9 @@ function buildOverview(actions: ViewActions): ViewHost {
 
       const others = State.otherTasks.slice(0, 4);
       const pillKey = others.map((t) => `${t.id}:${t.color}:${t.pillBadge ?? ""}`).join("|");
+      // No other pill (no integration picked, no agent): no pills box, the
+      // card takes the whole width.
+      el.classList.toggle("solo", others.length === 0);
       if (pillKey !== pillIds) {
         pillIds = pillKey;
         clear(pills);
