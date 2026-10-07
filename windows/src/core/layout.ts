@@ -50,9 +50,10 @@ export interface ViewLayout {
   agentMode: AgentLayoutMode;
 }
 
-// The window is a fixed 720×320 (largest view) like the macOS panel; the island is
-// drawn inside it, glued to the top edge and horizontally centred.
-export const PANEL_W = 720;
+// The window is a fixed 1000×320 (largest view: the overview with the orchestra
+// panel beside it); the island is drawn inside it, glued to the top edge and
+// horizontally centred.
+export const PANEL_W = 1000;
 export const PANEL_H = 320;
 
 // No notch on a PC: these are the hidden/compact sizes from docs/SPEC.md.
@@ -60,6 +61,17 @@ export const NOTCH_W = 184;
 export const NOTCH_H = 32;
 export const COMPACT_W = 288; // NOTCH_W + 104
 export const EXPANDED_W = 640;
+/** Width the orchestra panel adds to the right of the main views. */
+export const ORCH_W = 340;
+/** Orchestra rows shown at most; the rest are summed up in one line. */
+export const ORCH_ROWS = 7;
+
+/** Height of the island with the orchestra panel: room for its rows. */
+export function orchHeight(taskCount: number): number {
+  const rows = Math.min(taskCount, ORCH_ROWS);
+  const more = taskCount > ORCH_ROWS ? 22 : 0;
+  return Math.min(PANEL_H - 10, 62 + rows * 32 + more);
+}
 
 export const ROUNDED_CORNER = 14; // hidden / compact
 export const EXPANDED_CORNER = 22;
@@ -111,6 +123,7 @@ export function islandSize(
   mode: IslandMode,
   view: IslandViewName,
   chatCount = 0,
+  orchCount = 0,
 ): { w: number; h: number } {
   switch (mode) {
     case "hidden":
@@ -121,6 +134,8 @@ export function islandSize(
       return { w: COMPACT_W, h: NOTCH_H };
     case "expanded": {
       const h = view === "prompt" ? chatPromptHeight(chatCount) : VIEW_LAYOUTS[view].height;
+      // orchCount is only given when the panel is shown (State.orchShown).
+      if (orchCount > 0) return { w: EXPANDED_W + ORCH_W, h: Math.max(h, orchHeight(orchCount)) };
       return { w: EXPANDED_W, h };
     }
   }

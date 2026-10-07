@@ -1289,6 +1289,41 @@ async function rerender() {
   }
 }
 
+
+// ── Orchestra section ─────────────────────────────────────────────────────────
+
+/** The Claude Code orchestra (`/orch`): its tasks beside the overview. */
+function orchestraSection(): HTMLElement {
+  const dir = h("input", {
+    type: "text",
+    value: settings.orchestraDir,
+    placeholder: "~/.claude/orchestra/queues",
+    style: "flex:1 1 auto;min-width:0",
+    spellcheck: "false",
+  }) as HTMLInputElement;
+  // Saved on every keystroke, like the Claude Code command.
+  dir.addEventListener("input", () => {
+    settings.orchestraDir = dir.value.trim();
+    void save();
+  });
+
+  return h(
+    "section",
+    {},
+    h("h2", {}, h("span", { text: "Orchestra" })),
+    h("div", { class: "row" },
+      h("label", { text: "Show the tasks" }),
+      toggle(settings.orchestraEnabled, (v) => { settings.orchestraEnabled = v; void save(); }),
+      h("span", { class: "hint", text: "beside the overview, while the island is open" }),
+    ),
+    h("div", { class: "row" }, h("label", { text: "Queues folder" }), dir),
+    h("span", {
+      class: "hint",
+      text: "Where the orchestra mod keeps its queues: <Claude Code config>/orchestra/queues. Read only.",
+    }),
+  );
+}
+
 // ── Boot ──────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -1371,6 +1406,7 @@ async function render() {
     activePillsSection(connected),
     integrationsSection(present),
     phoneSection(settings.phoneLink ?? false, toggle, settings),
+    orchestraSection(),
     generalSection(),
     shortcutsSection(shortcutReport),
     h("div", {

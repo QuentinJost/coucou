@@ -21,6 +21,7 @@ import { UploadCanvas } from "../upload/canvas";
 import { USC, UploadSeq } from "../upload/sequence";
 import { closePlanCard, openPlanColor, planCardOpen } from "../views/usage";
 import { buildHeader, buildViews, type ViewActions, type ViewHost } from "../views/views";
+import { buildOrchestra, type OrchestraPanel } from "../views/orchestra";
 import { h } from "../views/dom";
 import { IslandStateMachine } from "./fsm";
 import { refreshHookPills } from "./integrations";
@@ -41,6 +42,9 @@ const UPLOAD_VIEWS: ReadonlySet<IslandViewName> = new Set(["upload", "uploading"
 /** Seconds between the drop and the moment the progress bar starts filling. */
 const PRE_PROGRESS = USC.T_PROG_START - USC.T_DROP;
 
+/** How often the orchestra's queues are read, only while the island is open. */
+const ORCH_POLL_MS = 2000;
+
 const modeOrder = (m: IslandMode) => (m === "hidden" ? 0 : m === "compact" ? 1 : 2);
 
 export class Island {
@@ -52,6 +56,8 @@ export class Island {
   private islandEl!: HTMLElement;
   private clipEl!: HTMLElement;
   private contentEl!: HTMLElement;
+  private orchPanel!: OrchestraPanel;
+  private orchTimer: number | null = null;
   private viewsEl!: HTMLElement;
   private botCanvas!: HTMLCanvasElement;
   private botGlow!: HTMLElement;
@@ -265,6 +271,7 @@ export class Island {
     this.viewsEl = h("div", { id: "views" });
     for (const v of this.views.values()) this.viewsEl.append(v.el);
     this.contentEl = h("div", { id: "content" }, this.header.el, this.viewsEl);
+    this.orchPanel = buildOrchestra();
 
     // The drop sequence draws the card, the bar and its own Mochi. It sits under
     // the header, which stays visible on top of it exactly as on macOS.
@@ -284,6 +291,7 @@ export class Island {
       this.greetingCanvas,
       this.uploadCanvas.el,
       this.contentEl,
+      this.orchPanel.el,
     );
     this.islandEl = h(
       "div",
@@ -351,6 +359,7 @@ export class Island {
     const prev = State.mode;
     if (mode === prev) return;
     State.mode = mode;
+    this.syncOrchestraPoll();
     if (mode === "expanded") Sound.play("open");
     if (prev === "expanded") {
       Sound.play("close");
@@ -644,7 +653,8 @@ export class Island {
   // ── Geometry ────────────────────────────────────────────────────────────────
 
   private targetSize(): { w: number; h: number; r: number } {
-    let { w, h } = islandSize(State.mode, State.view, State.chatHistory.length);
+    const orchCount = State.orchShown ? State.orchestra.length : 0;
+    let { w, h } = islandSize(State.mode, State.view, State.chatHistory.length, orchCount);
     if (State.mode === "expanded" && State.view === "question" && State.pendingApproval?.questions) {
       h = QUESTION_PICKER_H;
     }
@@ -1144,6 +1154,13 @@ export class Island {
     // underneath, so only the header may keep taking clicks up here.
     this.contentEl.style.pointerEvents = live && !this.uploadActive ? "auto" : "none";
     this.header.el.style.pointerEvents = live ? "auto" : "none";
+    // With orchestra tasks around, the main views keep their own width on the
+    // left whether the panel is out or not, so they never stretch while the
+    // island grows or shrinks.
+    const orchAround = State.settings.orchestraEnabled && State.orchestra.length > 0;
+    this.contentEl.style.right = orchAround ? "auto" : "";
+    this.contentEl.style.width = orchAround ? `${EXPANDED_W}px` : "";
+    this.orchPanel.sync();
     this.greetingCanvas.style.display = greetingActive ? "block" : "none";
 
     // Leaving the greeting, however it ends, lets its sound fade out.
@@ -1194,10 +1211,41 @@ export class Island {
 
   /** Applies settings coming from Rust at boot. */
   applySettings() {
+    this.syncOrchestraPoll();
     Sound.setEnabled(State.settings.soundEnabled);
     Sound.setVolume(State.settings.soundVolume);
     this.fsm.homeToPetitDelay = State.settings.autoCloseInterval;
     this.fsm.openOnHover = State.settings.openOnHover;
+    State.notify();
+  }
+
+  // ── Orchestra ───────────────────────────────────────────────────────────────
+
+  /** Reads the orchestra's queues while the island is open, never while it is not. */
+  private syncOrchestraPoll() {
+    const wanted = State.mode === "expanded" && State.settings.orchestraEnabled && !State.paused;
+    if (wanted && this.orchTimer == null) {
+      void this.refreshOrchestra();
+      this.orchTimer = window.setInterval(() => void this.refreshOrchestra(), ORCH_POLL_MS);
+    } else if (!wanted && this.orchTimer != null) {
+      window.clearInterval(this.orchTimer);
+      this.orchTimer = null;
+    }
+    if (!State.settings.orchestraEnabled && State.orchestra.length > 0) {
+      State.orchestra = [];
+      this.animateGeometry(true);
+      State.notify();
+    }
+  }
+
+  private async refreshOrchestra() {
+    const tasks = await Bridge.orchestraSnapshot();
+    // No answer (outside Tauri, or the call failed): keep what is shown.
+    if (tasks == null || JSON.stringify(tasks) === JSON.stringify(State.orchestra)) return;
+    const before = State.orchShown ? State.orchestra.length : 0;
+    State.orchestra = tasks;
+    const after = State.orchShown ? tasks.length : 0;
+    if (before !== after) this.animateGeometry(after < before);
     State.notify();
   }
 

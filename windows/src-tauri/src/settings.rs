@@ -97,6 +97,12 @@ pub struct Settings {
     pub phone_relay: bool,
     /// The relay's address (`wss://…`), empty until the user enters it. Not a secret. Owned by Rust.
     pub phone_relay_url: String,
+    /// Shows the tasks of the Claude Code orchestra (`/orch`) beside the overview.
+    #[serde(default)]
+    pub orchestra_enabled: bool,
+    /// The orchestra's queues folder; empty = ~/.claude/orchestra/queues.
+    #[serde(default)]
+    pub orchestra_dir: String,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
@@ -162,6 +168,8 @@ impl Default for Settings {
             phone_services: Vec::new(),
             phone_relay: false,
             phone_relay_url: String::new(),
+            orchestra_enabled: false,
+            orchestra_dir: String::new(),
         }
     }
 }

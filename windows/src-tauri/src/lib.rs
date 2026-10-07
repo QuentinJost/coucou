@@ -18,6 +18,7 @@ mod local_chat;
 mod log;
 mod net;
 mod openai_compat;
+mod orchestra;
 mod phone_link;
 mod pipe;
 mod platform;
@@ -491,6 +492,24 @@ fn local_set_key(url: String, key: String) -> Result<(), String> {
     local_chat::set_custom_key(&url, &key)
 }
 
+/// The orchestra's tasks, read on demand while the island is open: nothing
+/// polls when it is hidden.
+#[tauri::command]
+fn orchestra_snapshot(shared: State<'_, Shared>) -> Vec<orchestra::OrchTask> {
+    let (enabled, dir) = {
+        let s = shared.settings.lock().unwrap();
+        (s.orchestra_enabled, s.orchestra_dir.clone())
+    };
+    if !enabled {
+        return Vec::new();
+    }
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_millis() as f64)
+        .unwrap_or(0.0);
+    orchestra::snapshot(&orchestra::queues_dir(&dir), now)
+}
+
 #[tauri::command]
 fn chat_reset(chat: State<Chat>) {
     chat.reset();
@@ -714,6 +733,7 @@ pub fn run() {
             local_connect,
             local_set_key,
             chat_reset,
+            orchestra_snapshot,
             ingest_file,
             secret_present,
             secret_set,

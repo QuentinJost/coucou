@@ -162,6 +162,24 @@ export interface Settings {
     onDesktop: boolean;
     spot: { x: number; y: number; space: string } | null;
   };
+  /** Shows the tasks of the Claude Code orchestra (`/orch`) beside the overview. */
+  orchestraEnabled: boolean;
+  /** The orchestra's queues folder; empty = ~/.claude/orchestra/queues. */
+  orchestraDir: string;
+}
+
+/** One task of the Claude Code orchestra, as orchestra.rs sums it up. */
+export interface OrchTask {
+  id: number;
+  orchestrator: string;
+  repo: string;
+  role: string;
+  state: "queued" | "working" | "checking" | "reviewing" | "approved" | "blocked" | "escalated";
+  round: number;
+  session: string;
+  model: string;
+  title: string;
+  updatedAt: number;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -190,6 +208,8 @@ export const DEFAULT_SETTINGS: Settings = {
   mochiOutfit: DEFAULT_OUTFIT,
   pillColors: {},
   language: "",
+  orchestraEnabled: false,
+  orchestraDir: "",
 };
 
 type Listener = () => void;
@@ -256,6 +276,8 @@ class AppState {
 
   /** Outfit shown on Mochi while the pointer rests on a wardrobe button. */
   wardrobePreview: Outfit | null = null;
+  /** The orchestra's tasks, refreshed while the island is open. */
+  orchestra: OrchTask[] = [];
 
   lastActivity = performance.now();
 
@@ -499,6 +521,16 @@ class AppState {
     this.settings.activeIntegrations = next;
     if (!next.includes(id) && this.focusId === id) this.focusId = this.mainPillId;
     this.loadIntegrationTasks();
+  }
+
+  /** The orchestra panel sits beside the main views when it has tasks to show. */
+  get orchShown(): boolean {
+    return (
+      this.settings.orchestraEnabled &&
+      this.orchestra.length > 0 &&
+      this.mode === "expanded" &&
+      (this.view === "overview" || this.view === "empty")
+    );
   }
 
   /**
