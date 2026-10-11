@@ -3899,6 +3899,204 @@
    "pt-BR": "Este código também inclui a chave de acesso e a chave de ponta a ponta do relay {host}. «Parear de novo» cria uma chave e uma sala novas.",
    "ru": "Этот код также содержит ключ доступа и сквозной ключ для ретранслятора {host}. «Сопрячь заново» создаёт новый ключ и новую комнату.",
    "id": "Kode ini juga memuat kunci akses dan kunci ujung ke ujung untuk relay {host}. «Sandingkan ulang» membuat kunci dan ruang baru."
+  },
+  "Collapse": {
+   "zh-Hans": "收起",
+   "hi": "छोटा करें",
+   "es": "Contraer",
+   "ar": "طي",
+   "fr": "Réduire",
+   "bn": "ছোট করুন",
+   "pt-BR": "Recolher",
+   "ru": "Свернуть",
+   "id": "Ciutkan"
+  },
+  "Orchestra": {
+   "zh-Hans": "编排",
+   "hi": "ऑर्केस्ट्रा",
+   "es": "Orquesta",
+   "ar": "الأوركسترا",
+   "fr": "Orchestre",
+   "bn": "অর্কেস্ট্রা",
+   "pt-BR": "Orquestra",
+   "ru": "Оркестр",
+   "id": "Orkestra"
+  },
+  "Active: {count}": {
+   "zh-Hans": "进行中：{count}",
+   "hi": "सक्रिय: {count}",
+   "es": "Activas: {count}",
+   "ar": "نشطة: {count}",
+   "fr": "Actives : {count}",
+   "bn": "সক্রিয়: {count}",
+   "pt-BR": "Ativas: {count}",
+   "ru": "Активные: {count}",
+   "id": "Aktif: {count}"
+  },
+  "For you: {count}": {
+   "zh-Hans": "待你处理：{count}",
+   "hi": "आपके लिए: {count}",
+   "es": "Para ti: {count}",
+   "ar": "بانتظارك: {count}",
+   "fr": "Pour toi : {count}",
+   "bn": "আপনার জন্য: {count}",
+   "pt-BR": "Para você: {count}",
+   "ru": "Ждут вас: {count}",
+   "id": "Untukmu: {count}"
+  },
+  "Queued: {count}": {
+   "zh-Hans": "排队中：{count}",
+   "hi": "कतार में: {count}",
+   "es": "En cola: {count}",
+   "ar": "في الانتظار: {count}",
+   "fr": "En file : {count}",
+   "bn": "সারিতে: {count}",
+   "pt-BR": "Na fila: {count}",
+   "ru": "В очереди: {count}",
+   "id": "Antre: {count}"
+  },
+  "Working": {
+   "zh-Hans": "进行中",
+   "hi": "काम जारी",
+   "es": "En curso",
+   "ar": "قيد العمل",
+   "fr": "En cours",
+   "bn": "চলছে",
+   "pt-BR": "Em andamento",
+   "ru": "В работе",
+   "id": "Dikerjakan"
+  },
+  "Checks": {
+   "zh-Hans": "检查中",
+   "hi": "जाँच",
+   "es": "Comprobaciones",
+   "ar": "فحوصات",
+   "fr": "Vérifications",
+   "bn": "যাচাই",
+   "pt-BR": "Verificações",
+   "ru": "Проверки",
+   "id": "Pemeriksaan"
+  },
+  "Review": {
+   "zh-Hans": "审查中",
+   "hi": "समीक्षा",
+   "es": "Revisión",
+   "ar": "مراجعة",
+   "fr": "Relecture",
+   "bn": "পর্যালোচনা",
+   "pt-BR": "Revisão",
+   "ru": "Ревью",
+   "id": "Tinjauan"
+  },
+  "Queued": {
+   "zh-Hans": "排队中",
+   "hi": "कतार में",
+   "es": "En cola",
+   "ar": "في الانتظار",
+   "fr": "En file",
+   "bn": "সারিতে",
+   "pt-BR": "Na fila",
+   "ru": "В очереди",
+   "id": "Antre"
+  },
+  "Blocked": {
+   "zh-Hans": "受阻",
+   "hi": "अटका",
+   "es": "Bloqueada",
+   "ar": "متوقفة",
+   "fr": "Bloquée",
+   "bn": "আটকে আছে",
+   "pt-BR": "Bloqueada",
+   "ru": "Заблокирована",
+   "id": "Terhambat"
+  },
+  "Your call": {
+   "zh-Hans": "待你决定",
+   "hi": "आपके निर्णय हेतु",
+   "es": "Te toca decidir",
+   "ar": "بانتظار قرارك",
+   "fr": "À toi de décider",
+   "bn": "আপনার সিদ্ধান্ত",
+   "pt-BR": "Sua decisão",
+   "ru": "Ваше решение",
+   "id": "Keputusanmu"
+  },
+  "round {count}": {
+   "zh-Hans": "第 {count} 轮",
+   "hi": "दौर {count}",
+   "es": "ronda {count}",
+   "ar": "الجولة {count}",
+   "fr": "tour {count}",
+   "bn": "রাউন্ড {count}",
+   "pt-BR": "rodada {count}",
+   "ru": "раунд {count}",
+   "id": "putaran {count}"
+  },
+  "+ {count} more": {
+   "zh-Hans": "还有 {count} 项",
+   "hi": "+ {count} और",
+   "es": "+ {count} más",
+   "ar": "+ {count} أخرى",
+   "fr": "+ {count} de plus",
+   "bn": "+ আরও {count}",
+   "pt-BR": "+ {count} a mais",
+   "ru": "+ ещё {count}",
+   "id": "+ {count} lagi"
+  },
+  "orchestrator: {name}": {
+   "zh-Hans": "编排会话：{name}",
+   "hi": "ऑर्केस्ट्रेटर: {name}",
+   "es": "orquestador: {name}",
+   "ar": "المنسّق: {name}",
+   "fr": "orchestrateur : {name}",
+   "bn": "অর্কেস্ট্রেটর: {name}",
+   "pt-BR": "orquestrador: {name}",
+   "ru": "оркестратор: {name}",
+   "id": "orkestrator: {name}"
+  },
+  "Show the tasks": {
+   "zh-Hans": "显示任务",
+   "hi": "कार्य दिखाएँ",
+   "es": "Mostrar las tareas",
+   "ar": "عرض المهام",
+   "fr": "Afficher les tâches",
+   "bn": "কাজগুলো দেখান",
+   "pt-BR": "Mostrar as tarefas",
+   "ru": "Показывать задачи",
+   "id": "Tampilkan tugas"
+  },
+  "beside the overview, while the island is open": {
+   "zh-Hans": "在概览旁边，岛屿展开时显示",
+   "hi": "ओवरव्यू के बगल में, जब आइलैंड खुला हो",
+   "es": "junto al resumen, mientras la isla está abierta",
+   "ar": "بجانب النظرة العامة، أثناء فتح الجزيرة",
+   "fr": "à côté de l'aperçu, quand l'île est ouverte",
+   "bn": "ওভারভিউয়ের পাশে, আইল্যান্ড খোলা থাকলে",
+   "pt-BR": "ao lado da visão geral, com a ilha aberta",
+   "ru": "рядом с обзором, пока остров открыт",
+   "id": "di samping ikhtisar, saat pulau terbuka"
+  },
+  "Queues folder": {
+   "zh-Hans": "队列文件夹",
+   "hi": "कतार फ़ोल्डर",
+   "es": "Carpeta de colas",
+   "ar": "مجلد الطوابير",
+   "fr": "Dossier des files",
+   "bn": "সারির ফোল্ডার",
+   "pt-BR": "Pasta das filas",
+   "ru": "Папка очередей",
+   "id": "Folder antrean"
+  },
+  "Where the orchestra mod keeps its queues: <Claude Code config>/orchestra/queues. Read only.": {
+   "zh-Hans": "编排模组保存队列的位置：<Claude Code 配置>/orchestra/queues。只读。",
+   "hi": "जहाँ ऑर्केस्ट्रा मॉड अपनी कतारें रखता है: <Claude Code कॉन्फ़िग>/orchestra/queues. केवल पढ़ने के लिए।",
+   "es": "Donde el mod orchestra guarda sus colas: <configuración de Claude Code>/orchestra/queues. Solo lectura.",
+   "ar": "حيث يحفظ تعديل الأوركسترا طوابيره: <إعدادات Claude Code>/orchestra/queues. للقراءة فقط.",
+   "fr": "Là où le mod orchestra garde ses files : <config de Claude Code>/orchestra/queues. Lecture seule.",
+   "bn": "যেখানে অর্কেস্ট্রা মড তার সারি রাখে: <Claude Code কনফিগ>/orchestra/queues। শুধু পড়ার জন্য।",
+   "pt-BR": "Onde o mod orchestra guarda suas filas: <configuração do Claude Code>/orchestra/queues. Somente leitura.",
+   "ru": "Где мод orchestra хранит свои очереди: <конфиг Claude Code>/orchestra/queues. Только чтение.",
+   "id": "Tempat mod orchestra menyimpan antreannya: <konfigurasi Claude Code>/orchestra/queues. Hanya baca."
   }
  }
 }

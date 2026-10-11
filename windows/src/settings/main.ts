@@ -21,7 +21,7 @@ import { phoneSection } from "./phone";
 import { colorDot } from "./colors";
 import { renderDiff, statusDot } from "./parts";
 import {
-  LANGUAGES, N_, isRtl, onLanguageChange, resolveLanguage, setLanguage, systemLanguages, t, tn,
+  LANGUAGES, N_, isRtl, onLanguageChange, resolveLanguage, setLanguage, systemLanguages, t, tl, tn,
 } from "../i18n/i18n";
 
 /** Where secrets.rs keeps the keys on this OS. */
@@ -1310,16 +1310,16 @@ function orchestraSection(): HTMLElement {
   return h(
     "section",
     {},
-    h("h2", {}, h("span", { text: "Orchestra" })),
+    h("h2", {}, h("span", { text: tl("Orchestra") })),
     h("div", { class: "row" },
-      h("label", { text: "Show the tasks" }),
+      h("label", { text: tl("Show the tasks") }),
       toggle(settings.orchestraEnabled, (v) => { settings.orchestraEnabled = v; void save(); }),
-      h("span", { class: "hint", text: "beside the overview, while the island is open" }),
+      h("span", { class: "hint", text: tl("beside the overview, while the island is open") }),
     ),
-    h("div", { class: "row" }, h("label", { text: "Queues folder" }), dir),
+    h("div", { class: "row" }, h("label", { text: tl("Queues folder") }), dir),
     h("span", {
       class: "hint",
-      text: "Where the orchestra mod keeps its queues: <Claude Code config>/orchestra/queues. Read only.",
+      text: tl("Where the orchestra mod keeps its queues: <Claude Code config>/orchestra/queues. Read only."),
     }),
   );
 }
