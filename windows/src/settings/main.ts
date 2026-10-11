@@ -1290,6 +1290,34 @@ async function rerender() {
 }
 
 
+// ── Claude Code in the chat ───────────────────────────────────────────────────
+
+/** The command behind the chat's "Claude Code" provider (claude_cli.rs). */
+function claudeCodeChatSection(): HTMLElement {
+  const command = h("input", {
+    type: "text",
+    value: settings.claudeCommand,
+    placeholder: "claude",
+    style: "flex:1 1 auto;min-width:0",
+    spellcheck: "false",
+  }) as HTMLInputElement;
+  // Saved on every keystroke: closing the window right after typing must not lose it.
+  command.addEventListener("input", () => {
+    settings.claudeCommand = command.value.trim();
+    void save();
+  });
+  return h(
+    "section",
+    {},
+    h("h2", {}, h("span", { text: tl("Claude Code in the chat") })),
+    h("div", { class: "row" }, h("label", { text: tl("Command") }), command),
+    h("span", {
+      class: "hint",
+      text: tl("The chat's Claude Code provider runs `claude -p` with this command, on your own Claude subscription: no API key. E.g. `docker exec -i claude-code claude` for Claude Code in a container. Empty hides it."),
+    }),
+  );
+}
+
 // ── Orchestra section ─────────────────────────────────────────────────────────
 
 /** The Claude Code orchestra (`/orch`): its tasks beside the overview. */
@@ -1411,6 +1439,7 @@ async function render() {
     activePillsSection(connected),
     integrationsSection(present),
     phoneSection(settings.phoneLink ?? false, toggle, settings),
+    claudeCodeChatSection(),
     orchestraSection(),
     generalSection(),
     shortcutsSection(shortcutReport),

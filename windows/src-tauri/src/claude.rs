@@ -67,7 +67,7 @@ fn models_endpoint(messages: &Url) -> Url {
 
 /// The user's content blocks for one turn. File / window context rides along
 /// with the first message only, exactly like ClaudeService.chat().
-fn user_content(first: bool, context: Option<&ChatContext>, query: &str) -> Vec<Value> {
+pub(crate) fn user_content(first: bool, context: Option<&ChatContext>, query: &str) -> Vec<Value> {
     let mut content: Vec<Value> = Vec::new();
     if first {
         match context {

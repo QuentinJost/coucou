@@ -4097,6 +4097,39 @@
    "pt-BR": "com o nome da pasta; workers e revisores ficam discretos",
    "ru": "по имени папки; исполнители и ревьюеры не отвлекают",
    "id": "dinamai sesuai foldernya; worker dan peninjau tetap senyap"
+  },
+  "Claude Code in the chat": {
+   "zh-Hans": "聊天中的 Claude Code",
+   "hi": "चैट में Claude Code",
+   "es": "Claude Code en el chat",
+   "ar": "Claude Code في الدردشة",
+   "fr": "Claude Code dans le chat",
+   "bn": "চ্যাটে Claude Code",
+   "pt-BR": "Claude Code no chat",
+   "ru": "Claude Code в чате",
+   "id": "Claude Code di obrolan"
+  },
+  "Command": {
+   "zh-Hans": "命令",
+   "hi": "कमांड",
+   "es": "Comando",
+   "ar": "الأمر",
+   "fr": "Commande",
+   "bn": "কমান্ড",
+   "pt-BR": "Comando",
+   "ru": "Команда",
+   "id": "Perintah"
+  },
+  "The chat's Claude Code provider runs `claude -p` with this command, on your own Claude subscription: no API key. E.g. `docker exec -i claude-code claude` for Claude Code in a container. Empty hides it.": {
+   "zh-Hans": "聊天的 Claude Code 提供方用此命令运行 `claude -p`，使用你自己的 Claude 订阅，无需 API 密钥。例如容器中的 Claude Code 用 `docker exec -i claude-code claude`。留空则隐藏。",
+   "hi": "चैट का Claude Code प्रदाता इस कमांड से `claude -p` चलाता है, आपकी अपनी Claude सदस्यता पर: कोई API कुंजी नहीं। उदाहरण: कंटेनर में Claude Code के लिए `docker exec -i claude-code claude`। खाली छोड़ने पर यह छिप जाता है।",
+   "es": "El proveedor Claude Code del chat ejecuta `claude -p` con este comando, con tu propia suscripción de Claude: sin clave de API. P. ej. `docker exec -i claude-code claude` para Claude Code en un contenedor. Vacío lo oculta.",
+   "ar": "يشغّل مزوّد Claude Code في الدردشة الأمر `claude -p` بهذا الأمر، على اشتراكك الخاص في Claude: بلا مفتاح API. مثال: `docker exec -i claude-code claude` لـ Claude Code داخل حاوية. تركه فارغًا يخفيه.",
+   "fr": "Le fournisseur Claude Code du chat lance `claude -p` avec cette commande, sur ton propre abonnement Claude : pas de clé API. Par ex. `docker exec -i claude-code claude` pour Claude Code dans un conteneur. Vide, il est masqué.",
+   "bn": "চ্যাটের Claude Code প্রদানকারী এই কমান্ডে `claude -p` চালায়, আপনার নিজের Claude সাবস্ক্রিপশনে: কোনো API কী নেই। যেমন কন্টেইনারে Claude Code-এর জন্য `docker exec -i claude-code claude`। খালি রাখলে লুকানো থাকে।",
+   "pt-BR": "O provedor Claude Code do chat executa `claude -p` com este comando, na sua própria assinatura do Claude: sem chave de API. Ex.: `docker exec -i claude-code claude` para o Claude Code em um contêiner. Vazio o oculta.",
+   "ru": "Провайдер Claude Code в чате запускает `claude -p` этой командой, на вашей собственной подписке Claude: без API-ключа. Например, `docker exec -i claude-code claude` для Claude Code в контейнере. Пустое поле скрывает его.",
+   "id": "Penyedia Claude Code di obrolan menjalankan `claude -p` dengan perintah ini, memakai langganan Claude milikmu: tanpa kunci API. Mis. `docker exec -i claude-code claude` untuk Claude Code di dalam kontainer. Kosong berarti disembunyikan."
   }
  }
 }

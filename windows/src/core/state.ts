@@ -172,6 +172,8 @@ export interface Settings {
     onDesktop: boolean;
     spot: { x: number; y: number; space: string } | null;
   };
+  /** Command that runs the Claude Code CLI for the chat's "Claude Code" provider; empty hides it. */
+  claudeCommand: string;
   /** One pill per Claude Code session (by session id) instead of one for all. */
   sessionPills: boolean;
   /** Shows the tasks of the Claude Code orchestra (`/orch`) beside the overview. */
@@ -220,6 +222,7 @@ export const DEFAULT_SETTINGS: Settings = {
   mochiOutfit: DEFAULT_OUTFIT,
   pillColors: {},
   language: "",
+  claudeCommand: "",
   sessionPills: false,
   orchestraEnabled: false,
   orchestraDir: "",

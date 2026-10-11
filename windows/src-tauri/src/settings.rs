@@ -97,6 +97,10 @@ pub struct Settings {
     pub phone_relay: bool,
     /// The relay's address (`wss://…`), empty until the user enters it. Not a secret. Owned by Rust.
     pub phone_relay_url: String,
+    /// The command that runs the Claude Code CLI for the chat's "Claude Code"
+    /// provider (claude_cli.rs), split on whitespace. Empty hides that provider.
+    #[serde(default)]
+    pub claude_command: String,
     /// One pill per Claude Code session (by session id) instead of one for all.
     #[serde(default)]
     pub session_pills: bool,
@@ -171,6 +175,7 @@ impl Default for Settings {
             phone_services: Vec::new(),
             phone_relay: false,
             phone_relay_url: String::new(),
+            claude_command: String::new(),
             session_pills: false,
             orchestra_enabled: false,
             orchestra_dir: String::new(),
@@ -460,7 +465,11 @@ mod tests {
   "phoneUsage": true,
   "phoneServices": ["integration_stripe"],
   "phoneRelay": true,
-  "phoneRelayUrl": "wss://relay.example.workers.dev"
+  "phoneRelayUrl": "wss://relay.example.workers.dev",
+  "claudeCommand": "docker exec -i claude-code claude",
+  "sessionPills": true,
+  "orchestraEnabled": true,
+  "orchestraDir": "~/dev/claude-code/.claude/orchestra/queues"
 }"##;
 
     fn custom() -> Value {
@@ -968,6 +977,10 @@ mod tests {
                 "phoneServices",
                 "phoneRelay",
                 "phoneRelayUrl",
+                "claudeCommand",
+                "sessionPills",
+                "orchestraEnabled",
+                "orchestraDir",
             ]
         );
         let _ = std::fs::remove_dir_all(&dir);

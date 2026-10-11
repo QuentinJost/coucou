@@ -11,7 +11,8 @@ import { DEFAULT_SETTINGS } from "../src/core/state.ts";
 const settings = (over = {}) => ({ ...DEFAULT_SETTINGS, ...over });
 
 test("the ids and key names match the Rust side and the Mac", () => {
-  assert.deepEqual(PROVIDERS.map((p) => p.id), ["anthropic", "google", "openai", "openrouter", "ollama", "lmstudio", "custom"]);
+  assert.deepEqual(PROVIDERS.map((p) => p.id), ["anthropic", "google", "openai", "openrouter", "ollama", "lmstudio", "custom", "claudecode"]);
+  assert.equal(providerDef("claudecode").key, null);
   assert.equal(providerDef("google").key, "google-api-key");
   assert.equal(providerDef("openai").key, "openai-api-key");
   assert.equal(providerDef("openrouter").key, "openrouter-api-key");
@@ -71,4 +72,13 @@ test("an address says whether what you type leaves this computer", () => {
   assert.equal(urlExposure("ftp://example.com"), "invalid");
   assert.equal(urlExposure("http://user:pw@example.com"), "invalid");
   assert.equal(urlExposure("http://"), "invalid");
+});
+
+test("Claude Code shows in the picker once its command is set, or while in use", () => {
+  const ids = (s) => visibleProviders(s).map((p) => p.id);
+  assert.ok(!ids(settings()).includes("claudecode"));
+  assert.ok(!ids(settings({ claudeCommand: "  " })).includes("claudecode"));
+  assert.ok(ids(settings({ claudeCommand: "docker exec -i claude-code claude" })).includes("claudecode"));
+  assert.ok(ids(settings({ chatProvider: "claudecode" })).includes("claudecode"));
+  assert.equal(activeModel(settings({ chatProvider: "claudecode" })), "sonnet");
 });

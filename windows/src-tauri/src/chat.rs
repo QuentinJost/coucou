@@ -13,7 +13,7 @@ use serde_json::{json, Value};
 use tauri::AppHandle;
 
 use crate::settings::Settings;
-use crate::{claude, local_chat, openai_compat, secrets};
+use crate::{claude, claude_cli, local_chat, openai_compat, secrets};
 
 pub const ANTHROPIC: &str = "anthropic";
 
@@ -169,6 +169,7 @@ pub fn model_for(settings: &Settings, provider: &str) -> String {
         .map(|m| m.trim().to_string())
         .filter(|m| !m.is_empty())
         .or_else(|| openai_compat::provider(provider).map(|p| p.default_model.to_string()))
+        .or_else(|| (provider == claude_cli::PROVIDER).then(|| claude_cli::DEFAULT_MODEL.to_string()))
         .unwrap_or_default()
 }
 
@@ -210,6 +211,9 @@ pub async fn send(
     if provider == ANTHROPIC || provider.is_empty() {
         return claude::send(chat, &model, query, context).await;
     }
+    if provider == claude_cli::PROVIDER {
+        return claude_cli::send(chat, &settings.claude_command, &model, query, context).await;
+    }
     if let Some(p) = openai_compat::provider(provider) {
         return openai_compat::send(chat, p, &model, query, context).await;
     }
@@ -233,6 +237,9 @@ pub async fn send_for_phone(
     if provider == ANTHROPIC {
         return claude::send(chat, model, query, None).await;
     }
+    if provider == claude_cli::PROVIDER {
+        return claude_cli::send(chat, &settings.claude_command, model, query, None).await;
+    }
     if let Some(p) = openai_compat::provider(provider) {
         return openai_compat::send(chat, p, model, query, None).await;
     }
@@ -250,6 +257,9 @@ pub async fn models(settings: &Settings, provider: &str) -> Result<Vec<ModelInfo
     if provider == ANTHROPIC {
         let key = secrets::get(claude::KEY).ok_or_else(no_key)?;
         return claude::models(&key).await;
+    }
+    if provider == claude_cli::PROVIDER {
+        return Ok(claude_cli::models());
     }
     if let Some(p) = openai_compat::provider(provider) {
         let key = secrets::get(p.key).ok_or_else(no_key)?;
