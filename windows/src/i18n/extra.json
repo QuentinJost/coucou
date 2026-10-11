@@ -23,17 +23,6 @@
    "ru": "(сохранён)",
    "id": "(tersimpan)"
   },
-  "+ subagent": {
-   "zh-Hans": "+ 子代理",
-   "hi": "+ सब-एजेंट",
-   "es": "+ subagente",
-   "ar": "+ وكيل فرعي",
-   "fr": "+ sous-agent",
-   "bn": "+ সাব-এজেন্ট",
-   "pt-BR": "+ subagente",
-   "ru": "+ субагент",
-   "id": "+ subagen"
-  },
   "A hook group named \"coucou\" that Coucou did not write is already there — Coucou has not touched it.": {
    "zh-Hans": "已存在一个并非 Coucou 写入的名为“coucou”的 hook 组 — Coucou 没有修改它。",
    "hi": "“coucou” नाम का एक hook समूह पहले से है जिसे Coucou ने नहीं लिखा — Coucou ने इसे नहीं छुआ।",
@@ -3306,17 +3295,6 @@
    "ru": "У {what} неожиданный тип — Coucou его не трогал.",
    "id": "{what} bertipe tak terduga — Coucou tidak menyentuhnya."
   },
-  "• subagent done": {
-   "zh-Hans": "• 子代理完成",
-   "hi": "• सब-एजेंट पूरा",
-   "es": "• subagente terminado",
-   "ar": "• انتهى الوكيل الفرعي",
-   "fr": "• sous-agent terminé",
-   "bn": "• সাব-এজেন্ট শেষ",
-   "pt-BR": "• subagente concluído",
-   "ru": "• субагент завершил",
-   "id": "• subagen selesai"
-  },
   "⚠ failed": {
    "zh-Hans": "⚠ 失败",
    "hi": "⚠ विफल",
@@ -4097,6 +4075,28 @@
    "pt-BR": "Onde o mod orchestra guarda suas filas: <configuração do Claude Code>/orchestra/queues. Somente leitura.",
    "ru": "Где мод orchestra хранит свои очереди: <конфиг Claude Code>/orchestra/queues. Только чтение.",
    "id": "Tempat mod orchestra menyimpan antreannya: <konfigurasi Claude Code>/orchestra/queues. Hanya baca."
+  },
+  "One pill per Claude Code session": {
+   "zh-Hans": "每个 Claude Code 会话一个标签",
+   "hi": "हर Claude Code सत्र के लिए एक पिल",
+   "es": "Una píldora por sesión de Claude Code",
+   "ar": "حبة لكل جلسة Claude Code",
+   "fr": "Une pastille par session Claude Code",
+   "bn": "প্রতিটি Claude Code সেশনের জন্য একটি পিল",
+   "pt-BR": "Uma pílula por sessão do Claude Code",
+   "ru": "Отдельная плашка для каждой сессии Claude Code",
+   "id": "Satu pil per sesi Claude Code"
+  },
+  "named after its folder; workers and reviewers stay quiet": {
+   "zh-Hans": "以其文件夹命名；工作和审查会话保持安静",
+   "hi": "उसके फ़ोल्डर के नाम पर; वर्कर और रिव्यूअर शांत रहते हैं",
+   "es": "con el nombre de su carpeta; los workers y revisores no interrumpen",
+   "ar": "باسم مجلدها؛ يبقى العاملون والمراجعون هادئين",
+   "fr": "au nom de son dossier ; ouvriers et relecteurs restent discrets",
+   "bn": "তার ফোল্ডারের নামে; ওয়ার্কার ও রিভিউয়াররা চুপ থাকে",
+   "pt-BR": "com o nome da pasta; workers e revisores ficam discretos",
+   "ru": "по имени папки; исполнители и ревьюеры не отвлекают",
+   "id": "dinamai sesuai foldernya; worker dan peninjau tetap senyap"
   }
  }
 }

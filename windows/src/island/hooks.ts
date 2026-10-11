@@ -8,7 +8,8 @@
 import { Bridge, onEvent } from "../core/bridge";
 import { buildFileDiff, fileName, makeDiffStep, toOneLine } from "../core/diff";
 import { Sound } from "../core/sound";
-import { State, type AskedQuestion } from "../core/state";
+import { State, isSessionPill, sessionPillId, type AskedQuestion } from "../core/state";
+import { colorForProject } from "../core/layout";
 import { pillDefinition } from "../core/pills";
 import { APPROVAL_AGENTS, agentColor, agentName, validateAgent } from "./agents";
 import type { Island } from "./island";
@@ -44,6 +45,66 @@ function cancelStopTimer(id: string): boolean {
   return true;
 }
 
+/**
+ * Claude Code sessions each get their own pill (`cc_…`). A session "at work"
+ * silent this long has stopped without saying so — an orchestrator stops its
+ * workers and reviewers from outside, with neither Stop nor SessionEnd — and
+ * goes back to rest; one silent for hours is gone and its pill goes too.
+ */
+const SESSION_SILENT_MS = 5 * 60 * 1000;
+const SESSION_STALE_MS = 2 * 3600 * 1000;
+/** Last event per session pill. */
+const lastSeen = new Map<string, number>();
+
+/**
+ * Bookkeeping tools a model calls for itself (listing sessions, loading tool
+ * schemas, its task list…): they say nothing about the work, so no ticker step.
+ */
+const SILENT_TOOLS = new Set([
+  "ListAgents", "ToolSearch", "TaskList", "TaskGet", "TaskCreate", "TaskUpdate",
+  "ReadNotifications", "ScheduleWakeup", "TodoRead",
+]);
+
+/** A session's pill on its first event; two sessions in one folder are told apart: "app", "app 2". */
+function ensureSessionPill(id: string, projectName: string, cwd: string, sessionId: string) {
+  lastSeen.set(id, Date.now());
+  if (!State.tasks.some((x) => x.id === id)) {
+    const taken = new Set(State.tasks.filter((x) => isSessionPill(x.id)).map((x) => x.name));
+    let label = projectName;
+    for (let n = 2; taken.has(label); n++) label = `${projectName} ${n}`;
+    State.upsertSessionPill(id, label, colorForProject(label), cwd, sessionId);
+    return;
+  }
+  State.upsertSessionPill(id, projectName, "", cwd, sessionId);
+}
+
+/** Rests the sessions silent for minutes, drops those silent for hours. */
+function pruneSessions() {
+  const now = Date.now();
+  for (const [id, at] of lastSeen) {
+    if (now - at > SESSION_STALE_MS) {
+      lastSeen.delete(id);
+      State.removeTask(id);
+      continue;
+    }
+    const x = State.tasks.find((p) => p.id === id);
+    if (x && (x.state === "working" || x.state === "thinking") && now - at > SESSION_SILENT_MS) {
+      State.updateTask(id, "idle");
+    }
+  }
+}
+
+/**
+ * The view follows the session that starts working, unless the pill on screen
+ * is at work itself or waits for the person: no session steals it from another.
+ */
+function followFocus(id: string) {
+  const current = State.focusTask;
+  if (!current || current.id === id) return;
+  const isResting = current.state === "idle" || current.state === "finished";
+  if (!isSessionPill(current.id) || isResting) State.focusId = id;
+}
+
 /** Events after which a pending permission request of the same session is moot. */
 const TURN_OVER = new Set(["Stop", "StopFailure", "UserPromptSubmit", "SessionEnd", "Interrupt"]);
 
@@ -63,6 +124,8 @@ interface HookPayload {
   coucou_diff_truncated?: boolean;
   /** Optional agent tag: lowercase, digits and hyphens, ≤ 24 chars. */
   coucou_agent?: string;
+  /** The agent a Claude Code session runs as (`claude --agent`), when it runs as one. */
+  agent_type?: string;
   /** Hermes: where the session runs (telegram, discord…; "cli" in a terminal). */
   platform?: string;
   /** "cursor" when Claude Code runs in Cursor's terminal (set by the relay). */
@@ -116,6 +179,9 @@ const TOOL_LABELS: Record<string, string> = {
 };
 
 function stepLabel(tool: string, input: Record<string, unknown>): string {
+  // MCP tools: mcp__<server>__<tool> reads "<server> · <tool>".
+  const mcp = /^mcp__(.+?)__(.+)$/.exec(tool);
+  if (mcp) return `${mcp[1].replace(/^claude_ai_/, "")} · ${mcp[2]}`;
   const label = TOOL_LABELS[tool] ? t(TOOL_LABELS[tool]) : tool;
   const str = (k: string) => (typeof input[k] === "string" ? (input[k] as string) : null);
   const cmd = str("command");
@@ -126,6 +192,9 @@ function stepLabel(tool: string, input: Record<string, unknown>): string {
   if (file) return `${label} · ${lastPathComponent(file)}`;
   const query = str("query");
   if (query) return `${label} · ${query.slice(0, 40)}`;
+  // Messages, skills and subagents: whom or what they are for.
+  const target = str("to") ?? str("skill") ?? str("description");
+  if (target) return `${label} · ${target.slice(0, 40)}`;
   return label;
 }
 
@@ -228,6 +297,16 @@ export function registerHookHandlers(island: Island) {
   // The last plan numbers seen survive a restart, as on the Mac.
   State.planUsage ??= restorePlanUsage(storedClaudePlanUsage());
   void onEvent<HookPayload>("hook", (payload) => handleHook(island, payload));
+  // Silent sessions are also caught while no hook comes in, but only while the
+  // island is out: nothing runs when it is hidden.
+  const timer: unknown = window.setInterval(() => {
+    if (State.mode !== "hidden" && lastSeen.size > 0) {
+      pruneSessions();
+      State.notify();
+    }
+  }, 30_000);
+  // Under Node (the tests) a timer keeps the process alive: let it go.
+  (timer as { unref?: () => void }).unref?.();
 }
 
 function handleHook(island: Island, payload: HookPayload) {
@@ -255,14 +334,27 @@ function handleHook(island: Island, payload: HookPayload) {
   // Route to the right pill. Valid coucou_agent → dynamic "agent_<name>" pill.
   // "claude" is reserved; absent or invalid → Claude Code's own pill: Cursor's
   // when it runs in Cursor's terminal (Mac #120), VS Code's otherwise.
+  // With the "one pill per session" setting, a Claude Code session with an id
+  // has its own pill; otherwise, or without an id, the editor's pill as before.
   const validAgent = validateAgent(payload.coucou_agent);
   const workspaceId = payload.term_editor === "cursor" ? CURSOR_ID : CLAUDE_ID;
-  const agentId = validAgent ? `agent_${validAgent}` : workspaceId;
-  const isExternalAgent = validAgent !== null;
   const sessionId = payload.session_id ?? "";
+  const isExternalAgent = validAgent !== null;
+  const isSession = State.settings.sessionPills && !isExternalAgent && sessionId !== "";
+  const agentId = validAgent ? `agent_${validAgent}` : isSession ? sessionPillId(sessionId) : workspaceId;
+  // The sessions of an orchestrator (its workers and reviewers run as `orch-…`
+  // agents) work in the background: they keep their pill, but never open the
+  // island, bring it back, take the view or make a sound. A card they ask for
+  // still comes up: someone has to answer it.
+  const isQuiet = !isExternalAgent && (payload.agent_type ?? "").startsWith("orch-");
+  const play = (sound: Parameters<typeof Sound.play>[0]) => {
+    if (!isQuiet) Sound.play(sound);
+  };
+  pruneSessions();
 
   /** Alerts force the island open; work events only reveal the compact island. */
   const surface = (view: Parameters<Island["alert"]>[0], isAlert: boolean) => {
+    if (isQuiet) return;
     if (State.mode === "expanded") {
       if (isAlert) island.setView(view);
     } else if (isAlert) {
@@ -272,8 +364,13 @@ function handleHook(island: Island, payload: HookPayload) {
     }
   };
 
-  /** Ensure the agent pill exists (no-op for Claude Code). */
-  const ensurePill = () => {
+  /** Ensure the pill exists; a session at work takes the view when it is free. */
+  const ensurePill = (isWork = false) => {
+    if (isSession) {
+      ensureSessionPill(agentId, projectName, cwd, sessionId);
+      if (isWork && !isQuiet) followFocus(agentId);
+      return;
+    }
     if (isExternalAgent) {
       State.upsertExternalAgent(agentId, agentName(validAgent!), agentColor(validAgent!));
       const t = State.tasks.find((x) => x.id === agentId);
@@ -322,11 +419,11 @@ function handleHook(island: Island, payload: HookPayload) {
         State.appendStep(agentId, payload.platform.charAt(0).toUpperCase() + payload.platform.slice(1));
       }
       surface("overview", false);
-      Sound.play("work");
+      play("work");
       break;
 
     case "UserPromptSubmit": {
-      ensurePill();
+      ensurePill(true);
       supersedeStop();
       clearFinalLine(agentId);
       State.updateTask(agentId, "thinking");
@@ -338,17 +435,18 @@ function handleHook(island: Island, payload: HookPayload) {
     }
 
     case "PreToolUse": {
-      ensurePill();
+      ensurePill(true);
       supersedeStop();
       clearFinalLine(agentId);
       State.updateTask(agentId, "working");
       const tool = payload.tool_name ?? "Tool";
-      State.appendStep(agentId, stepLabel(tool, payload.tool_input ?? {}));
+      if (!SILENT_TOOLS.has(tool)) State.appendStep(agentId, stepLabel(tool, payload.tool_input ?? {}));
       surface("overview", false);
       break;
     }
 
     case "PostToolUse":
+      if (isSession) ensurePill();
       supersedeStop();
       // The question was answered in the terminal: the card would be lying.
       if (
@@ -373,10 +471,18 @@ function handleHook(island: Island, payload: HookPayload) {
     case "Notification": {
       const message = payload.message ?? "";
       const lower = message.toLowerCase();
+      if (isSession) ensurePill();
+      // "Claude is waiting for your input": the session rests, also after an
+      // interrupted turn, which sends no Stop.
+      if (isSession && lower.includes("waiting for your input")) {
+        supersedeStop();
+        State.updateTask(agentId, "idle");
+        break;
+      }
       if (lower.includes("rate limit") || lower.includes("limite d")) {
         supersedeStop();
         State.updateTask(agentId, "ratelimit");
-        Sound.play("rate");
+        play("rate");
       } else if (message.endsWith("?")) {
         supersedeStop();
         State.updateTask(agentId, "question");
@@ -386,6 +492,7 @@ function handleHook(island: Island, payload: HookPayload) {
     }
 
     case "Stop": {
+      if (isSession) ensurePill();
       State.updateTask(agentId, "finished");
       // Claude Code puts the turn's answer in the Stop payload itself, so there is
       // no transcript to read (the relay does not even forward its path). Other
@@ -397,9 +504,9 @@ function handleHook(island: Island, payload: HookPayload) {
         const t = State.tasks.find((x) => x.id === agentId);
         if (t) t.finalLine = finalText;
       }
-      Sound.play("finish");
+      play("finish");
       // A card waiting for an answer is never covered by another alert.
-      if (focused && !State.pendingApproval) surface("finished", true);
+      if (focused && !State.pendingApproval && !isQuiet) surface("finished", true);
       else State.setPillBadge(agentId, "finished");
       cancelStopTimer(agentId);
       stopTimers.set(
@@ -427,8 +534,8 @@ function handleHook(island: Island, payload: HookPayload) {
     case "StopFailure":
       supersedeStop();
       State.updateTask(agentId, "error");
-      Sound.play("error");
-      if (focused && !State.pendingApproval) surface("error", true);
+      play("error");
+      if (focused && !State.pendingApproval && !isQuiet) surface("error", true);
       else State.setPillBadge(agentId, "error");
       break;
 
@@ -437,6 +544,7 @@ function handleHook(island: Island, payload: HookPayload) {
       // pill recreated within 5.2 s would be removed by it.
       cancelStopTimer(agentId);
       State.clearSessionDiffs(agentId);
+      lastSeen.delete(agentId);
       if (isExternalAgent) {
         State.removeTask(agentId);
       } else {
@@ -445,12 +553,10 @@ function handleHook(island: Island, payload: HookPayload) {
       }
       break;
 
+    // No step for subagents: the Agent call that starts one is already in the
+    // ticker with its description, and "subagent done" told nothing.
     case "SubagentStart":
-      State.appendStep(agentId, t("+ subagent"));
-      break;
-
     case "SubagentStop":
-      State.appendStep(agentId, t("• subagent done"));
       break;
 
     case "PermissionRequest": {
@@ -470,7 +576,7 @@ function handleHook(island: Island, payload: HookPayload) {
         if (requestId) void Bridge.approvalDecline(requestId);
         break;
       }
-      ensurePill();
+      ensurePill(true);
       supersedeStop();
       if (pendingTimeout != null) window.clearTimeout(pendingTimeout);
       const tool = payload.tool_name ?? "Tool";

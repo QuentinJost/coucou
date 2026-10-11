@@ -97,6 +97,9 @@ pub struct Settings {
     pub phone_relay: bool,
     /// The relay's address (`wss://…`), empty until the user enters it. Not a secret. Owned by Rust.
     pub phone_relay_url: String,
+    /// One pill per Claude Code session (by session id) instead of one for all.
+    #[serde(default)]
+    pub session_pills: bool,
     /// Shows the tasks of the Claude Code orchestra (`/orch`) beside the overview.
     #[serde(default)]
     pub orchestra_enabled: bool,
@@ -168,6 +171,7 @@ impl Default for Settings {
             phone_services: Vec::new(),
             phone_relay: false,
             phone_relay_url: String::new(),
+            session_pills: false,
             orchestra_enabled: false,
             orchestra_dir: String::new(),
         }

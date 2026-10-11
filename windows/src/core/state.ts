@@ -41,6 +41,16 @@ export interface AgentTask {
   finalLine?: string | null;
 }
 
+/** Pills of Claude Code sessions: one per session, `cc_` + the start of its session id. */
+export const SESSION_PILL_PREFIX = "cc_";
+
+/** The pill of the Claude Code session `sessionId`. */
+export function sessionPillId(sessionId: string): string {
+  return `${SESSION_PILL_PREFIX}${sessionId.slice(0, 8)}`;
+}
+
+export const isSessionPill = (id: string): boolean => id.startsWith(SESSION_PILL_PREFIX);
+
 export interface ApprovalInfo {
   requestId: string;
   sessionId: string;
@@ -162,6 +172,8 @@ export interface Settings {
     onDesktop: boolean;
     spot: { x: number; y: number; space: string } | null;
   };
+  /** One pill per Claude Code session (by session id) instead of one for all. */
+  sessionPills: boolean;
   /** Shows the tasks of the Claude Code orchestra (`/orch`) beside the overview. */
   orchestraEnabled: boolean;
   /** The orchestra's queues folder; empty = ~/.claude/orchestra/queues. */
@@ -208,6 +220,7 @@ export const DEFAULT_SETTINGS: Settings = {
   mochiOutfit: DEFAULT_OUTFIT,
   pillColors: {},
   language: "",
+  sessionPills: false,
   orchestraEnabled: false,
   orchestraDir: "",
 };
@@ -487,6 +500,25 @@ class AppState {
       state: "idle", stepIndex: 0, steps: [],
       source: "agent", isIntegration: false,
     });
+  }
+
+  /**
+   * The pill of one Claude Code session, made on its first event right after
+   * the main pill. It goes when the session ends (it is never kept).
+   */
+  upsertSessionPill(id: string, name: string, color: string, cwd: string, sessionId: string): AgentTask {
+    let t = this.tasks.find((x) => x.id === id);
+    if (!t) {
+      t = {
+        id, name, color,
+        state: "idle", stepIndex: 0, steps: [],
+        source: "claudeCode", isIntegration: false,
+      };
+      this.insertAfterMain(t);
+    }
+    if (cwd) t.sessionCwd = cwd;
+    t.sessionId = sessionId;
+    return t;
   }
 
   /**

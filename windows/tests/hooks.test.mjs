@@ -121,11 +121,11 @@ test("only the last 20 steps are kept", () => {
   assert.equal(task().stepIndex, 19);
 });
 
-test("a failed tool call and subagents leave their own steps", () => {
+test("a failed tool call leaves its step; subagents leave none (the Agent call already says it)", () => {
   hook({ hook_event_name: "PostToolUseFailure" });
   hook({ hook_event_name: "SubagentStart" });
   hook({ hook_event_name: "SubagentStop" });
-  assert.deepEqual(task().steps, ["⚠ failed", "+ subagent", "• subagent done"]);
+  assert.deepEqual(task().steps, ["⚠ failed"]);
   assert.equal(task().state, "working");
 });
 
@@ -694,4 +694,85 @@ test("a declined permission request leaves the stop timer running", () => {
   afterStop(() => ask("r2"));
   assert.deepEqual(sent("approval_decline"), [{ requestId: "r1" }, { requestId: "r2" }]);
   assert.equal(task().state, "idle");
+});
+
+// ── One pill per Claude Code session (setting, off by default) ────────────────
+
+const pills = () => State.tasks.filter((t) => t.id.startsWith("cc_"));
+
+test("with the setting, each session gets its own pill, named after its folder", () => {
+  State.settings.sessionPills = true;
+  hook({ hook_event_name: "UserPromptSubmit", session_id: "aaaaaaaa-1", cwd: "/app/mtg", prompt: "build" });
+  hook({ hook_event_name: "UserPromptSubmit", session_id: "bbbbbbbb-2", cwd: "/app", prompt: "fix" });
+  hook({ hook_event_name: "PreToolUse", session_id: "cccccccc-3", cwd: "/app", tool_name: "Read", tool_input: { file_path: "/a/b.ts" } });
+  assert.deepEqual(pills().map((t) => t.name).sort(), ["app", "app 2", "mtg"]);
+  assert.equal(task("cc_aaaaaaaa").sessionId, "aaaaaaaa-1");
+  assert.deepEqual(task("cc_aaaaaaaa").steps, ["build"]);
+  // The editor's pill is left alone.
+  assert.deepEqual(task().steps, []);
+  hook({ hook_event_name: "SessionEnd", session_id: "cccccccc-3", cwd: "/app" });
+  assert.equal(task("cc_cccccccc"), undefined);
+});
+
+test("without the setting, every session stays on the editor's pill", () => {
+  hook({ hook_event_name: "UserPromptSubmit", session_id: "aaaaaaaa-1", cwd: "/app/mtg", prompt: "build" });
+  assert.deepEqual(pills(), []);
+  assert.deepEqual(task().steps, ["build"]);
+});
+
+test("the view follows a session that starts working, never away from one at work", () => {
+  State.settings.sessionPills = true;
+  hook({ hook_event_name: "UserPromptSubmit", session_id: "aaaaaaaa-1", cwd: "/app/mtg", prompt: "one" });
+  assert.equal(State.focusId, "cc_aaaaaaaa");
+  hook({ hook_event_name: "UserPromptSubmit", session_id: "bbbbbbbb-2", cwd: "/app", prompt: "two" });
+  assert.equal(State.focusId, "cc_aaaaaaaa");
+  hook({ hook_event_name: "Notification", session_id: "aaaaaaaa-1", cwd: "/app/mtg", message: "Claude is waiting for your input" });
+  assert.equal(task("cc_aaaaaaaa").state, "idle");
+  hook({ hook_event_name: "PreToolUse", session_id: "bbbbbbbb-2", cwd: "/app", tool_name: "Bash", tool_input: { command: "ls" } });
+  assert.equal(State.focusId, "cc_bbbbbbbb");
+});
+
+test("a session's finish concerns its own pill only", () => {
+  State.settings.sessionPills = true;
+  hook({ hook_event_name: "UserPromptSubmit", session_id: "aaaaaaaa-1", cwd: "/app/mtg", prompt: "one" });
+  hook({ hook_event_name: "UserPromptSubmit", session_id: "bbbbbbbb-2", cwd: "/app", prompt: "two" });
+  asked = [];
+  hook({ hook_event_name: "Stop", session_id: "bbbbbbbb-2", cwd: "/app" });
+  assert.equal(task("cc_bbbbbbbb").pillBadge, "finished");
+  assert.equal(task("cc_aaaaaaaa").state, "thinking");
+  assert.ok(!asked.includes("alert:finished"));
+});
+
+test("an orchestrator's sessions stay quiet, but their card still comes up", () => {
+  State.settings.sessionPills = true;
+  const worker = { session_id: "wwwwwwww-1", cwd: "/app/mtg", agent_type: "orch-lead-backend" };
+  hook({ ...worker, hook_event_name: "UserPromptSubmit", prompt: "brief" });
+  hook({ ...worker, hook_event_name: "PreToolUse", tool_name: "Bash", tool_input: { command: "go test" } });
+  hook({ ...worker, hook_event_name: "Stop" });
+  assert.deepEqual(asked, []);
+  assert.equal(task("cc_wwwwwwww").pillBadge, "finished");
+  // A session of the person's own takes the view over a quiet one.
+  assert.notEqual(State.focusId, "cc_wwwwwwww");
+  hook({ ...worker, hook_event_name: "PermissionRequest", request_id: "r1", tool_name: "Bash", tool_input: { command: "rm x" } });
+  assert.deepEqual(asked, ["alert:approval"]);
+});
+
+test("bookkeeping tools leave no step; messages, skills and MCP tools say what they are for", () => {
+  hook({ hook_event_name: "PreToolUse", tool_name: "ListAgents", tool_input: {} });
+  hook({ hook_event_name: "PreToolUse", tool_name: "ToolSearch", tool_input: { query: "select:SendMessage" } });
+  assert.deepEqual(task().steps, []);
+  hook({ hook_event_name: "PreToolUse", tool_name: "SendMessage", tool_input: { to: "app-b5", message: "STATUS: done" } });
+  hook({ hook_event_name: "PreToolUse", tool_name: "mcp__claude_ai_Notion__search", tool_input: {} });
+  assert.deepEqual(task().steps, ["SendMessage · app-b5", "Notion · search"]);
+});
+
+test("a session silent for five minutes at work goes back to rest", () => {
+  mock.timers.reset();
+  mock.timers.enable({ apis: ["setTimeout", "Date"], now: 0 });
+  State.settings.sessionPills = true;
+  hook({ hook_event_name: "PreToolUse", session_id: "aaaaaaaa-1", cwd: "/app/mtg", tool_name: "Bash", tool_input: { command: "x" } });
+  seconds(6 * 60);
+  // Any later event runs the check.
+  hook({ hook_event_name: "SessionStart", session_id: "bbbbbbbb-2", cwd: "/app" });
+  assert.equal(task("cc_aaaaaaaa").state, "idle");
 });

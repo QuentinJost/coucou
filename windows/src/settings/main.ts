@@ -1317,6 +1317,11 @@ function orchestraSection(): HTMLElement {
       h("span", { class: "hint", text: tl("beside the overview, while the island is open") }),
     ),
     h("div", { class: "row" }, h("label", { text: tl("Queues folder") }), dir),
+    h("div", { class: "row" },
+      h("label", { text: tl("One pill per Claude Code session") }),
+      toggle(settings.sessionPills, (v) => { settings.sessionPills = v; void save(); }),
+      h("span", { class: "hint", text: tl("named after its folder; workers and reviewers stay quiet") }),
+    ),
     h("span", {
       class: "hint",
       text: tl("Where the orchestra mod keeps its queues: <Claude Code config>/orchestra/queues. Read only."),

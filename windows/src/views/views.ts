@@ -5,7 +5,7 @@
 import { h, svg, clear, dot } from "./dom";
 import { ICONS } from "./icons";
 import { Ticker } from "./ticker";
-import { State, type AgentTask } from "../core/state";
+import { State, isSessionPill, type AgentTask } from "../core/state";
 import { washRGBA, type IslandViewName, type Wash } from "../core/layout";
 import { createMiniBot, pruneMiniBots } from "../mochi/minibots";
 import { buildPrompt } from "./chat";
@@ -427,6 +427,8 @@ function buildOverview(actions: ViewActions): ViewHost {
  * any other tagged agent — with something going on.
  */
 export function hasSessionTicker(task: AgentTask): boolean {
+  // A Claude Code session's own pill only exists while its session does.
+  if (isSessionPill(task.id)) return true;
   // A pill made for an agent's session (Gemini CLI, Codex… not declared) only
   // exists while that session does: it keeps the ticker from the first event.
   if (task.source === "agent" && !task.isIntegration) return true;
